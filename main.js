@@ -27,18 +27,13 @@ async function handleData(blocknumber, address){
     const transactions = await fetchTransactionsFromInfura(blocknumber,address);
     const [totalBalanceChange, totalFee] = extractTotal(transactions,address);
     
-    // DB에 데이터를 저장한 후
-    try{
-        await dbwrite(blocknumber,address,totalBalanceChange,totalFee);
-    }
-    catch (error){
-        // TODO
-        console.error("DB WRITE 중 오류");
-        process.exit();
-    }
+    // DB에 데이터를 저장하되 결과를 기다리지 않음
+    dbwrite(blocknumber, address, totalBalanceChange, totalFee).then(() => {
+        console.log("Data saved successfully");
+    }).catch(error => {
+        console.error("DB WRITE 중 오류", error);
+    });
 
-    // 값 리턴
-    console.log(2)
     return [blocknumber,address,totalBalanceChange,totalFee];
 }
 
@@ -50,10 +45,7 @@ async function fetchTransactionsFromInfura(blocknumber, address) {
         method: "eth_getBlockByNumber",
         params: [blocknumber, true]
     });
-    // console.log(response)
-    // TODO
-    // 오류처리
-
+    
     if(response.data.result === undefined){
         console.error("INFURA API 호출중 오류");
         process.exit(0);
@@ -68,30 +60,26 @@ function extractTotal(transactions,address){
 
     for(let i=0;i<transactions.length;i++){
         const tx = transactions[i];
-
-        console.log(tx);
         
         // 출금 또는 컨트랙트 내역
         // from, to 가 같을경우 출금내역에 등록
         if(tx.from == address.toLowerCase()){
             totalBalanceChange -= BigInt(tx.value);
             const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
-            totalFee += fee;
-            console.log(tx);
+            totalFee += fee;   
         }
         // 입금내역
         else if(tx.to == address.toLowerCase()){
             totalBalanceChange += BigInt(tx.value);
             const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
             totalFee += fee;
-            console.log(tx);
+            
         }
     }
     return [totalBalanceChange.toString(16), totalFee.toString(16)];
 }
 
-// http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669
-// curl "http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669"
+
 app.get('/transactions', async (req, res) => {
     const { address, blocknumber } = req.query;
     if (!address || !blocknumber) {
@@ -117,6 +105,9 @@ app.get('/transactions', async (req, res) => {
     }
 });
 
+
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+
