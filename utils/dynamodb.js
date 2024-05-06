@@ -1,7 +1,23 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { PutCommand, DynamoDBDocumentClient,GetCommand } from "@aws-sdk/lib-dynamodb";
+import 'dotenv/config';
 
-const client = new DynamoDBClient({});
+// AWS 자격 증명과 리전 설정
+const client = new DynamoDBClient({
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,   
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, 
+    },
+    region: process.env.AWS_REGION 
+});
+
+
+// console.log("AWS Access Key:", process.env.AWS_ACCESS_KEY_ID);
+// console.log("AWS Secret Access Key:", process.env.AWS_SECRET_ACCESS_KEY);
+// console.log("AWS Region:", process.env.AWS_REGION);
+
+
+
 const docClient = DynamoDBDocumentClient.from(client);
 
 export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) => {
@@ -38,8 +54,10 @@ export const dbread = async (blocknumber,address) => {
     });
   
     // 요청을 보내고 실패할 시 에러를 반환
+    
     const response = await docClient.send(command);
     if (response.$metadata.httpStatusCode !== 200){
+        console.log(response);
         throw new Error("AWS DynamoDB READ 요청 에러 발생");
     }
     

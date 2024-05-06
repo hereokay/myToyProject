@@ -2,14 +2,8 @@ import express from 'express';
 import axios from 'axios';
 import { dbwrite, dbread } from './utils/dynamodb.js';
 import 'dotenv/config';
-import AWS from 'aws-sdk';
 
 
-AWS.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
-  });
 
 const app = express();
 const port = 3000;
@@ -28,6 +22,7 @@ async function handleData(blocknumber, address){
     catch (error){
         // TODO
         console.error("DBREAD 중 오류");
+        console.error(error);
         process.exit();
     }
 
