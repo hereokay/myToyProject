@@ -12,31 +12,33 @@ const port = 3000;
 async function handleData(blocknumber, address){
 
     try{
-        const result = dbread(blocknumber, address);
+        const result = await dbread(blocknumber, address);
         if (result !== null){
-            return [result.totalBalanceChange, result.totalFee];
+            return result;
         }
     }
     catch (error){
         // TODO
-        console.error();
+        console.error("");
     }
 
     // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
     const transactions = fetchTransactionsFromInfura(blocknumber,address);
-    [totalBalanceChange, totalFee] = extractTotal(transactions);
-
+    const [totalBalanceChange, totalFee] = extractTotal(transactions);
+    
     // DB에 데이터를 저장한 후
     try{
-        dbwrite(blocknumber,address,totalBalanceChange,totalFee);
+        await dbwrite(blocknumber,address,totalBalanceChange,totalFee);
     }
     catch (error){
         // TODO
-        console.error();
+        
+        console.error("");
     }
 
     // 값 리턴
-    return [totalBalanceChange,totalFee];
+    console.log(2)
+    return [blocknumber,address,totalBalanceChange,totalFee];
 }
 
 async function fetchTransactionsFromInfura(blocknumber, address) {
@@ -47,6 +49,7 @@ async function fetchTransactionsFromInfura(blocknumber, address) {
         method: "eth_getBlockByNumber",
         params: [blocknumber, true]
     });
+    console.log(response)
     // TODO
     // 오류처리
     return response.data.result.transactions;
@@ -56,7 +59,7 @@ function extractTotal(transactions){
     let totalBalanceChange = BigInt(0);
     let totalFee = BigInt(0);
 
-    for(i=0;i<transactions.length;i++){
+    for(let i=0;i<transactions.length;i++){
         const tx = transactions[i];
         
         // 출금 또는 컨트랙트 내역
@@ -75,7 +78,7 @@ function extractTotal(transactions){
             console.log(tx);
         }
     }
-    return [totalBalanceChange.toString(10), totalFee.toString(10)];
+    return [totalBalanceChange, totalFee];
 }
 
 // http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669
@@ -86,12 +89,13 @@ app.get('/transactions', async (req, res) => {
         return res.status(400).send('Both address and blocknumber are required');
     }
 
-    const [totalBalanceChange, totalFee] = await handleData(blocknumber,address);
+    const data = await handleData(blocknumber,address);
+
     // 
     try {        
         res.json({
-            "balanceChange" : totalBalanceChange,
-            "fee": totalFee,
+            "balanceChange" : data[2],
+            "fee": data[3],
         });
     } catch (error) {
         res.status(500).json({ error: error.toString() });
