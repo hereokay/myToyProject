@@ -2,13 +2,21 @@ import express from 'express';
 import axios from 'axios';
 import { dbwrite, dbread } from './utils/dynamodb.js';
 import 'dotenv/config';
+import AWS from 'aws-sdk';
 
+
+AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+  });
 
 const app = express();
 const port = 3000;
 
 
-// 16진수로 쓰기
+
+// 16진수 문자열을 리턴
 async function handleData(blocknumber, address){
 
     try{
@@ -97,8 +105,8 @@ app.get('/transactions', async (req, res) => {
 
     try {
         res.json({
-            "balanceChange" : "0x"+ data[2].toString(16),
-            "fee": "0x"+data[3].toString(16),
+            "balanceChange" : "0x"+ data[2],
+            "fee": "0x"+data[3],
         });
     } catch (error) {
         res.status(500).json({ error: error.toString() });
