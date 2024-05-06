@@ -8,7 +8,7 @@ const app = express();
 const port = 3000;
 
 
-// 10진수로 쓰기
+// 16진수로 쓰기
 async function handleData(blocknumber, address){
 
     try{
@@ -98,10 +98,14 @@ app.get('/transactions', async (req, res) => {
         return res.status(400).send('blocknumber and address 를 입력해주세요');
     }
 
-    
+    const regex = /^0x[0-9a-f]+$/;
+
+    if (!(regex.test(address) && regex.test(blocknumber))) {
+        res.status(400).json({ error: "address 또는 blocknumber의 문자열 형식이 올바르지 않습니다." });
+        return ;
+    }
 
     const data = await handleData(blocknumber,address);
-
 
     try {
         res.json({
