@@ -4,7 +4,7 @@ import { PutCommand, DynamoDBDocumentClient,GetCommand } from "@aws-sdk/lib-dyna
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-export const write = async (blocknumber,address,totalBalanceChange,totalFee) => {
+export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) => {
     
     const command = new PutCommand({
         TableName: "my-simple-table",
@@ -28,7 +28,7 @@ export const write = async (blocknumber,address,totalBalanceChange,totalFee) => 
 };
 
 
-export const read = async (blocknumber,address) => {
+export const dbread = async (blocknumber,address) => {
     const command = new GetCommand({
       TableName: "my-simple-table",
       Key: {
