@@ -19,7 +19,8 @@ async function handleData(blocknumber, address){
     }
     catch (error){
         // TODO
-        console.error("");
+        console.error("DBREAD 중 오류");
+        process.exit();
     }
 
     // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
@@ -32,7 +33,8 @@ async function handleData(blocknumber, address){
     }
     catch (error){
         // TODO
-        console.error("");
+        console.error("DB WRITE 중 오류");
+        process.exit();
     }
 
     // 값 리턴
@@ -51,6 +53,12 @@ async function fetchTransactionsFromInfura(blocknumber, address) {
     // console.log(response)
     // TODO
     // 오류처리
+
+    if(response.data.result === undefined){
+        console.error("INFURA API 호출중 오류");
+        process.exit(0);
+    }
+
     return response.data.result.transactions;
 }
 
@@ -79,7 +87,7 @@ function extractTotal(transactions,address){
             console.log(tx);
         }
     }
-    return [totalBalanceChange, totalFee];
+    return [totalBalanceChange.toString(16), totalFee.toString(16)];
 }
 
 // http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669
@@ -87,13 +95,15 @@ function extractTotal(transactions,address){
 app.get('/transactions', async (req, res) => {
     const { address, blocknumber } = req.query;
     if (!address || !blocknumber) {
-        return res.status(400).send('Both address and blocknumber are required');
+        return res.status(400).send('blocknumber and address 를 입력해주세요');
     }
+
+    
 
     const data = await handleData(blocknumber,address);
 
-    // 
-    try {        
+
+    try {
         res.json({
             "balanceChange" : "0x"+ data[2].toString(16),
             "fee": "0x"+data[3].toString(16),
