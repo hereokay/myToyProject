@@ -1,17 +1,51 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
+import express from 'express';
+import axios from 'axios';
+import { dbwrite, dbread } from './utils/dynamodb.js';
+import 'dotenv/config';
+
+
 const app = express();
 const port = 3000;
 
 
+// 10진수로 쓰기
+async function handleData(blocknumber, address){
 
-async function fetchBlockTxFromInfura(blockNumber, address) {
+    try{
+        const result = dbread(blocknumber, address);
+        if (result !== null){
+            return [result.totalBalanceChange, result.totalFee];
+        }
+    }
+    catch (error){
+        // TODO
+        console.error();
+    }
+
+    // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
+    const transactions = fetchTransactionsFromInfura(blocknumber,address);
+    [totalBalanceChange, totalFee] = extractTotal(transactions);
+
+    // DB에 데이터를 저장한 후
+    try{
+        dbwrite(blocknumber,address,totalBalanceChange,totalFee);
+    }
+    catch (error){
+        // TODO
+        console.error();
+    }
+
+    // 값 리턴
+    return [totalBalanceChange,totalFee];
+}
+
+async function fetchTransactionsFromInfura(blocknumber, address) {
+    const url = "https://sepolia.infura.io/v3/" + process.env.API_KEY;
     const response = await axios.post(url, {
         jsonrpc: "2.0",
         id: 1,
         method: "eth_getBlockByNumber",
-        params: [blockNumber, true]
+        params: [blocknumber, true]
     });
     // TODO
     // 오류처리
@@ -41,25 +75,23 @@ function extractTotal(transactions){
             console.log(tx);
         }
     }
-    return [totalBalanceChange, totalFee];
+    return [totalBalanceChange.toString(10), totalFee.toString(10)];
 }
 
-// http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blockNumber=0x12dd669
-// curl "http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blockNumber=0x12dd669"
+// http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669
+// curl "http://localhost:3000/transactions?address=0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5&blocknumber=0x12dd669"
 app.get('/transactions', async (req, res) => {
-    const { address, blockNumber } = req.query;
-    if (!address || !blockNumber) {
-        return res.status(400).send('Both address and blockNumber are required');
+    const { address, blocknumber } = req.query;
+    if (!address || !blocknumber) {
+        return res.status(400).send('Both address and blocknumber are required');
     }
 
+    const [totalBalanceChange, totalFee] = await handleData(blocknumber,address);
+    // 
     try {        
-        const transactions = fetchBlockTxFromInfura(blockNumber,address);
-        
-        [totalBalanceChange, totalFee] = extractTotal(transactions);
-
         res.json({
-            "balanceChange" : totalBalanceChange.toString(10),
-            "fee": totalFee.toString(10),
+            "balanceChange" : totalBalanceChange,
+            "fee": totalFee,
         });
     } catch (error) {
         res.status(500).json({ error: error.toString() });
