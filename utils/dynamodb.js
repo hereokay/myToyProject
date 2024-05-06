@@ -4,12 +4,13 @@ import 'dotenv/config';
 
 // AWS 자격 증명과 리전 설정
 const client = new DynamoDBClient({
+    region: 'ap-northeast-2',
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,   
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, 
-    },
-    region: process.env.AWS_REGION 
+    }
 });
+
 
 
 // console.log("AWS Access Key:", process.env.AWS_ACCESS_KEY_ID);
