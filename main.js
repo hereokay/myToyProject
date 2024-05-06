@@ -23,8 +23,8 @@ async function handleData(blocknumber, address){
     }
 
     // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
-    const transactions = fetchTransactionsFromInfura(blocknumber,address);
-    const [totalBalanceChange, totalFee] = extractTotal(transactions);
+    const transactions = await fetchTransactionsFromInfura(blocknumber,address);
+    const [totalBalanceChange, totalFee] = extractTotal(transactions,address);
     
     // DB에 데이터를 저장한 후
     try{
@@ -32,7 +32,6 @@ async function handleData(blocknumber, address){
     }
     catch (error){
         // TODO
-        
         console.error("");
     }
 
@@ -42,25 +41,27 @@ async function handleData(blocknumber, address){
 }
 
 async function fetchTransactionsFromInfura(blocknumber, address) {
-    const url = "https://sepolia.infura.io/v3/" + process.env.API_KEY;
+    const url = "https://mainnet.infura.io/v3/" + process.env.API_KEY;
     const response = await axios.post(url, {
         jsonrpc: "2.0",
         id: 1,
         method: "eth_getBlockByNumber",
         params: [blocknumber, true]
     });
-    console.log(response)
+    // console.log(response)
     // TODO
     // 오류처리
     return response.data.result.transactions;
 }
 
-function extractTotal(transactions){
+function extractTotal(transactions,address){
     let totalBalanceChange = BigInt(0);
     let totalFee = BigInt(0);
 
     for(let i=0;i<transactions.length;i++){
         const tx = transactions[i];
+
+        console.log(tx);
         
         // 출금 또는 컨트랙트 내역
         // from, to 가 같을경우 출금내역에 등록
@@ -94,8 +95,8 @@ app.get('/transactions', async (req, res) => {
     // 
     try {        
         res.json({
-            "balanceChange" : data[2],
-            "fee": data[3],
+            "balanceChange" : "0x"+ data[2].toString(16),
+            "fee": "0x"+data[3].toString(16),
         });
     } catch (error) {
         res.status(500).json({ error: error.toString() });
