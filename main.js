@@ -23,7 +23,8 @@ async function handleData(blocknumber, address){
         // TODO
         console.error("DBREAD 중 오류");
         console.error(error);
-        process.exit();
+        return null;
+        //process.exit();
     }
 
     // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
@@ -97,6 +98,9 @@ app.get('/transactions', async (req, res) => {
     }
 
     const data = await handleData(blocknumber,address);
+    if (data===null){
+        return;
+    }
 
     try {
         res.json({
