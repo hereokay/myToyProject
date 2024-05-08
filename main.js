@@ -1,6 +1,6 @@
 import express from 'express';
-import axios from 'axios';
 import { dbwrite, dbread } from './utils/dynamodb.js';
+import { fetchTransactionsFromInfura } from './utils/infura.js';
 import 'dotenv/config';
 
 
@@ -41,22 +41,6 @@ async function handleData(blocknumber, address){
     return [blocknumber,address,totalBalanceChange,totalFee];
 }
 
-async function fetchTransactionsFromInfura(blocknumber, address) {
-    const url = "https://mainnet.infura.io/v3/" + process.env.API_KEY;
-    const response = await axios.post(url, {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getBlockByNumber",
-        params: [blocknumber, true]
-    });
-    
-    if(response.data.result === undefined){
-        console.error("INFURA API 호출중 오류");
-        process.exit(0);
-    }
-
-    return response.data.result.transactions;
-}
 
 function extractTotal(transactions,address){
     let totalBalanceChange = BigInt(0);
@@ -83,6 +67,9 @@ function extractTotal(transactions,address){
     return [totalBalanceChange.toString(16), totalFee.toString(16)];
 }
 
+app.get('/health', async (req,res) => {
+    res.status(200).send("OK");
+});
 
 app.get('/transactions', async (req, res) => {
     const { address, blocknumber } = req.query;
@@ -90,12 +77,15 @@ app.get('/transactions', async (req, res) => {
         return res.status(400).send('blocknumber and address 를 입력해주세요');
     }
 
-    const regex = /^0x[0-9a-f]+$/;
+    const addressRegex = /^0x[0-9a-fA-F]+$/ ;
+    const blocknumberRegex = /^[0-9]+$/ ;
 
-    if (!(regex.test(address) && regex.test(blocknumber))) {
+    if (!(addressRegex.test(address) && blocknumberRegex.test(blocknumber))) {
         res.status(400).json({ error: "address 또는 blocknumber의 문자열 형식이 올바르지 않습니다." });
         return ;
     }
+
+
 
     const data = await handleData(blocknumber,address);
     if (data===null){
@@ -118,3 +108,6 @@ app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
 
+
+
+export {handleData, extractTotal, app};
