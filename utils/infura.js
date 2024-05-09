@@ -6,6 +6,7 @@ import axios from 'axios';
 // address : 0x123 .. 16진수
 export const fetchTransactionsFromInfura = async (blocknumber, address) => {
 
+    
     const url = "https://mainnet.infura.io/v3/" + process.env.API_KEY;
     const response = await axios.post(url, {
         jsonrpc: "2.0",
@@ -15,7 +16,7 @@ export const fetchTransactionsFromInfura = async (blocknumber, address) => {
     });
 
     
-    if(response.data.result === undefined){
+    if(response.data.result === null){
         throw new Error("INFURA API 호출중 에러");
     }
 

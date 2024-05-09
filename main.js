@@ -10,6 +10,8 @@ const port = 3000;
 
 
 
+
+
 // 16진수 문자열을 리턴
 async function handleData(blocknumber, address){
 
@@ -23,7 +25,7 @@ async function handleData(blocknumber, address){
             case '존재하지 않는 Item':
                 break;
             default:
-                console.error(error.message);
+                console.error("DB READ Error :"+error.message);
                 throw error;
         }
     }
@@ -51,7 +53,7 @@ async function handleData(blocknumber, address){
 }
 
 function isValidQueryParameters(query){
-    const { address, blocknumber } = req.query;
+    const { address, blocknumber } = query;
     if (!address || !blocknumber) {
         return false;
     }
@@ -87,7 +89,10 @@ function extractTotal(transactions,address){
             totalFee += fee;
         }
     }
-    return [totalBalanceChange.toString(16), totalFee.toString(16)];
+
+
+
+    return [totalBalanceChange.toString(10), totalFee.toString(10)];
 }
 
 app.get('/health', async (req,res) => {
@@ -98,20 +103,28 @@ app.get('/transactions', async (req, res) => {
 
     if(!isValidQueryParameters(req.query)){
         res.status(400).json({ error: "address 또는 blocknumber의 문자열 형식이 올바르지 않습니다." });
+        return;
     }
+    
+    const address = req.query.address.toLowerCase(); // lower hex string
+    const decimalNumber = parseInt(req.query.blocknumber, 10); 
+    const blocknumber = "0x" + decimalNumber.toString(16); // lower hex string
 
+    
     try{
         const data = await handleData(blocknumber,address);
         res.json({
-            "balanceChange" : "0x"+ data[2],
-            "fee": "0x"+data[3],
+            "balanceChange" : data[2],
+            "fee": data[3],
         });
+        return;
     }
     catch (error) {
+        console.error(error.toString());
         res.status(500).json({ error: error.toString() });
+        return;
     }
 });
-
 
 
 app.listen(port, () => {
@@ -121,3 +134,4 @@ app.listen(port, () => {
 
 
 export {handleData, extractTotal, app};
+
