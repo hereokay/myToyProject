@@ -14,19 +14,20 @@ const port = 3000;
 async function handleData(blocknumber, address){
 
     try{
+        // result가 존재하는 경우
         const result = await dbread(blocknumber, address);
-        if (result !== null){
-            return result;
-        }
+        return result;
     }
     catch (error){
-        // TODO
-        console.error("DBREAD 중 오류");
-        console.error(error);
-        return null;
-        //process.exit();
+        switch(error.message){
+            case '존재하지 않는 Item':
+                break;
+            default:
+                console.error(error.message);
+                throw error;
+        }
     }
-
+    
     // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
     const transactions = await fetchTransactionsFromInfura(blocknumber,address);
     const [totalBalanceChange, totalFee] = extractTotal(transactions,address);

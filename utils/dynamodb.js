@@ -64,7 +64,7 @@ export const dbread = async (blocknumber,address) => {
     
     // 존재하지 않을 경우 null을 반환
     if (response.Item === undefined){
-        return null;
+        throw new Error("존재하지 않는 Item");
     }
 
 
