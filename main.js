@@ -27,9 +27,17 @@ async function handleData(blocknumber, address){
                 throw error;
         }
     }
+
+    let transactions;
+
+    // DB에서 조회할 수 없을 경우 -> API 호출
+    try{
+        transactions = await fetchTransactionsFromInfura(blocknumber,address);
+    }
+    catch (error){
+        throw error;
+    }
     
-    // result가 null 이거나 DB에서 조회할 수 없을 경우 -> API 호출
-    const transactions = await fetchTransactionsFromInfura(blocknumber,address);
     const [totalBalanceChange, totalFee] = extractTotal(transactions,address);
     
     // DB에 데이터를 저장하되 결과를 기다리지 않음

@@ -14,11 +14,9 @@ export const fetchTransactionsFromInfura = async (blocknumber, address) => {
         params: [blocknumber, true]
     });
 
-    console.log(response.data)
     
     if(response.data.result === undefined){
-        console.error("INFURA API 호출중 오류");
-        process.exit(0);
+        throw new Error("INFURA API 호출중 에러");
     }
 
     return response.data.result.transactions;

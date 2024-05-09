@@ -62,7 +62,7 @@ export const dbread = async (blocknumber,address) => {
         throw new Error("AWS DynamoDB READ 요청 에러 발생");
     }
     
-    // 존재하지 않을 경우 null을 반환
+    // 존재하지 않을 경우 에러 반환
     if (response.Item === undefined){
         throw new Error("존재하지 않는 Item");
     }
