@@ -11,16 +11,20 @@ const client = new DynamoDBClient({
     }
 });
 
-
-
-// console.log("AWS Access Key:", process.env.AWS_ACCESS_KEY_ID);
-// console.log("AWS Secret Access Key:", process.env.AWS_SECRET_ACCESS_KEY);
-// console.log("AWS Region:", process.env.AWS_REGION);
-
-
-
 const docClient = DynamoDBDocumentClient.from(client);
 
+
+
+/**
+ * DynamoDB에 특정 블록안에 특정 계정의 BalanceChange 와 Fee를 WRITE 
+ *
+ * @async
+ * @param {decimal string} blocknumber
+ * @param {lower hex string} address
+ * @param {decimal string} totalBalanceChange
+ * @param {decimal string} totalFee
+ * @returns {[]} - 위 4개의 변수를 그대로 반환 or 에러 반환
+ */
 export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) => {
     
     const command = new PutCommand({
@@ -45,6 +49,15 @@ export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) =
 };
 
 
+
+/**
+ * (blocknumber, address)에 대해 기존에 저장된 balance 와 fee 정보를 조회
+ *
+ * @async
+ * @param {decimal string} blocknumber
+ * @param {lower hex string} address
+ * @returns {[]} - blocknumber, address, totalbalanceChange, totalFee 를 배열로 반환, 없으면 에러 발생
+ */
 export const dbread = async (blocknumber,address) => {
     const command = new GetCommand({
       TableName: "my-simple-table",

@@ -4,6 +4,15 @@ import axios from 'axios';
 
 // blocknumber : 10진수 
 // address : 0x123 .. 16진수
+
+/**
+ * infura api 로 부터 블록안에 트랜잭션을 조회하는 함수
+ *
+ * @async
+ * @param {lower hex string} blocknumber
+ * @param {lower hex string} address
+ * @returns {transaction list}
+ */
 export const fetchTransactionsFromInfura = async (blocknumber, address) => {
 
     

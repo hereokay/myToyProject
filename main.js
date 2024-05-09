@@ -5,14 +5,23 @@ import 'dotenv/config';
 
 
 
+// Express 서버 사용, 포트 3000
 const app = express();
 const port = 3000;
 
 
-
-
-
-// 16진수 문자열을 리턴
+/**
+ * blocknumber 와 address 를 통해 balanceChange와 Fee를 얻는 함수
+ *
+ * @async
+ * @param {lower hex string} blocknumber - 조회할 블록넘버
+ * @param {lower hex string} address - 조회할 주소
+ * @returns {[]} - 4개 값을 담은 배열을 반환
+ *  - blocknumber(decimal string)
+ *  - address(lower hex string)
+ *  - totalBalanceChange(decimal string)
+ *  - totalFee(decimal string)
+ */
 async function handleData(blocknumber, address){
 
     try{
@@ -52,14 +61,21 @@ async function handleData(blocknumber, address){
     return [blocknumber,address,totalBalanceChange,totalFee];
 }
 
+
+/**
+ * 쿼리 파라미터가 정상 형식인지 판단하는 함수
+ * 
+ * @param {json} query - 쿼리 파라미터의 JSON
+ * @returns {boolean} - 정상적인 형식이라면 true 반환
+ */
 function isValidQueryParameters(query){
     const { address, blocknumber } = query;
     if (!address || !blocknumber) {
         return false;
     }
 
-    const addressRegex = /^0x[0-9a-fA-F]+$/ ;
-    const blocknumberRegex = /^[0-9]+$/ ;
+    const addressRegex = /^0x[0-9a-fA-F]+$/ ; // 0x1234 와 같은 hex string
+    const blocknumberRegex = /^[0-9]+$/ ; // 1235 와 같은 decimal string
 
     if (!(addressRegex.test(address) && blocknumberRegex.test(blocknumber))) {
         return false;
@@ -68,6 +84,16 @@ function isValidQueryParameters(query){
     return true;
 }
 
+
+/**
+ * transaction list 안에 해당 address에 대한 BalanceChange와 Fee를 구하는 함수
+ *
+ * @param {transaction list} transactions
+ * @param {lower hex string} address
+ * @returns {[]} - totalBalanceChange 와 totalFee 두개를 배열로 담아서 리턴
+ * - totalBalanceChange(decimal string, 음수 가능)
+ * - totalFee(decimal string, 음수 가능)
+ */
 function extractTotal(transactions,address){
     let totalBalanceChange = BigInt(0);
     let totalFee = BigInt(0);
@@ -90,15 +116,16 @@ function extractTotal(transactions,address){
         }
     }
 
-
-
     return [totalBalanceChange.toString(10), totalFee.toString(10)];
 }
 
+// 노드 서버가 살아있는지 확인하는 GET 메서드 핸들러
 app.get('/health', async (req,res) => {
     res.status(200).send("OK");
 });
 
+
+// blocknumber 와 address를 통해 balanceChange와 Fee를 구하는 GET 메서드 핸들러
 app.get('/transactions', async (req, res) => {
 
     if(!isValidQueryParameters(req.query)){
@@ -109,7 +136,6 @@ app.get('/transactions', async (req, res) => {
     const address = req.query.address.toLowerCase(); // lower hex string
     const decimalNumber = parseInt(req.query.blocknumber, 10); 
     const blocknumber = "0x" + decimalNumber.toString(16); // lower hex string
-
     
     try{
         const data = await handleData(blocknumber,address);
