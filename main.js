@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { query } from 'express';
 import { dbwrite, dbread } from './utils/dynamodb.js';
 import { fetchTransactionsFromInfura } from './utils/infura.js';
 import 'dotenv/config';
@@ -41,6 +41,21 @@ async function handleData(blocknumber, address){
     return [blocknumber,address,totalBalanceChange,totalFee];
 }
 
+function isValidQueryParameters(query){
+    const { address, blocknumber } = req.query;
+    if (!address || !blocknumber) {
+        return false;
+    }
+
+    const addressRegex = /^0x[0-9a-fA-F]+$/ ;
+    const blocknumberRegex = /^[0-9]+$/ ;
+
+    if (!(addressRegex.test(address) && blocknumberRegex.test(blocknumber))) {
+        return false;
+    }
+    
+    return true;
+}
 
 function extractTotal(transactions,address){
     let totalBalanceChange = BigInt(0);
@@ -61,7 +76,6 @@ function extractTotal(transactions,address){
             totalBalanceChange += BigInt(tx.value);
             const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
             totalFee += fee;
-            
         }
     }
     return [totalBalanceChange.toString(16), totalFee.toString(16)];
@@ -72,32 +86,19 @@ app.get('/health', async (req,res) => {
 });
 
 app.get('/transactions', async (req, res) => {
-    const { address, blocknumber } = req.query;
-    if (!address || !blocknumber) {
-        return res.status(400).send('blocknumber and address 를 입력해주세요');
-    }
 
-    const addressRegex = /^0x[0-9a-fA-F]+$/ ;
-    const blocknumberRegex = /^[0-9]+$/ ;
-
-    if (!(addressRegex.test(address) && blocknumberRegex.test(blocknumber))) {
+    if(!isValidQueryParameters(req.query)){
         res.status(400).json({ error: "address 또는 blocknumber의 문자열 형식이 올바르지 않습니다." });
-        return ;
     }
 
-
-
-    const data = await handleData(blocknumber,address);
-    if (data===null){
-        return;
-    }
-
-    try {
+    try{
+        const data = await handleData(blocknumber,address);
         res.json({
             "balanceChange" : "0x"+ data[2],
             "fee": "0x"+data[3],
         });
-    } catch (error) {
+    }
+    catch (error) {
         res.status(500).json({ error: error.toString() });
     }
 });
