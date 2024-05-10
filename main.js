@@ -115,8 +115,8 @@ function extractTotal(transactions,address){
             totalFee += fee;
         }
     }
-
-    return [totalBalanceChange.toString(10), totalFee.toString(10)];
+    
+    return [divideByETH(totalBalanceChange.toString(10)), divideByETH(totalFee.toString(10))];
 }
 
 // 노드 서버가 살아있는지 확인하는 GET 메서드 핸들러
@@ -126,7 +126,7 @@ app.get('/health', async (req,res) => {
 
 
 // blocknumber 와 address를 통해 balanceChange와 Fee를 구하는 GET 메서드 핸들러
-app.get('/transactions', async (req, res) => {
+app.get('/oneBlock', async (req, res) => {
 
     if(!isValidQueryParameters(req.query)){
         res.status(400).json({ error: "address 또는 blocknumber의 문자열 형식이 올바르지 않습니다." });
@@ -152,6 +152,34 @@ app.get('/transactions', async (req, res) => {
     }
 });
 
+function divideByETH(decimalString) {
+    
+    // ETH to wei 10^x unit
+    const decimalPlaces = 18;
+
+
+    let absString = decimalString;
+
+    // 음수이면 - 제거
+    const isNegative = absString[0] === '-';
+    if (isNegative) {
+        absString = absString.substring(1);
+    }
+
+    // 나눈후 앞에 0이 필요한 경우 추가
+    while (absString.length <= decimalPlaces) {
+        absString = '0' + absString;
+    }
+
+    // 소숫점 삽입
+    const index = absString.length - decimalPlaces;
+    const resultString = absString.substring(0, index) + '.' + absString.substring(index);
+
+    // 맨뒤 불필요한 0 제거
+    const trimmedResult = (isNegative ? '-' : '') + parseFloat(resultString).toString();
+
+    return trimmedResult;
+}
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
@@ -161,3 +189,5 @@ app.listen(port, () => {
 
 export {handleData, extractTotal, app};
 
+
+// https://gv07ocff6a.execute-api.ap-northeast-2.amazonaws.com/transactions?blocknumber=19839288&address=0x7c195D981AbFdC3DDecd2ca0Fed0958430488e34
