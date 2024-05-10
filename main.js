@@ -49,16 +49,16 @@ async function handleData(blocknumber, address){
         throw error;
     }
     
-    const [totalBalanceChange, totalFee] = extractTotal(transactions,address);
+    const [totalBalanceChange, totalFee, txCount] = extractTotal(transactions,address);
     
     // DB에 데이터를 저장하되 결과를 기다리지 않음
-    dbwrite(blocknumber, address, totalBalanceChange, totalFee).then(() => {
+    dbwrite(blocknumber, address, totalBalanceChange, totalFee, txCount).then(() => {
         console.log("Data saved successfully");
     }).catch(error => {
         console.error("DB WRITE 중 오류", error);
     });
 
-    return [blocknumber,address,totalBalanceChange,totalFee];
+    return [blocknumber,address,totalBalanceChange,totalFee, txCount];
 }
 
 
@@ -97,26 +97,37 @@ function isValidQueryParameters(query){
 function extractTotal(transactions,address){
     let totalBalanceChange = BigInt(0);
     let totalFee = BigInt(0);
+    let totalTx = 0;
 
     for(let i=0;i<transactions.length;i++){
         const tx = transactions[i];
-        
-        // 출금 또는 컨트랙트 내역
-        // from, to 가 같을경우 출금내역에 등록
-        if(tx.from == address.toLowerCase()){
+
+        // 출금인 == 입금인 같을경우
+        if(tx.from == address.toLowerCase() && tx.to == address.toLowerCase()){
+            const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
+            totalFee += fee;   
+            totalTx ++;
+        }
+        else if (tx.from == address.toLowerCase()){
+            // 오직 출금인 경우
             totalBalanceChange -= BigInt(tx.value);
             const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
             totalFee += fee;   
+            totalTx ++;
         }
-        // 입금내역
-        else if(tx.to == address.toLowerCase()){
+        else if (tx.to == address.toLowerCase()){
+            // 오직 입금인 경우
             totalBalanceChange += BigInt(tx.value);
             const fee = BigInt(tx.gas) * BigInt(tx.gasPrice);
             totalFee += fee;
+            totalTx ++;
+        }
+        else {
+            // empty
         }
     }
     
-    return [divideByETH(totalBalanceChange.toString(10)), divideByETH(totalFee.toString(10))];
+    return [divideByETH(totalBalanceChange.toString(10)), divideByETH(totalFee.toString(10)), totalTx];
 }
 
 // 노드 서버가 살아있는지 확인하는 GET 메서드 핸들러
@@ -142,6 +153,7 @@ app.get('/oneBlock', async (req, res) => {
         res.json({
             "balanceChange" : data[2],
             "fee": data[3],
+            "txCount": data[4],
         });
         return;
     }

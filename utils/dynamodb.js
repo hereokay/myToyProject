@@ -25,7 +25,7 @@ const docClient = DynamoDBDocumentClient.from(client);
  * @param {decimal string} totalFee
  * @returns {[]} - 위 4개의 변수를 그대로 반환 or 에러 반환
  */
-export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) => {
+export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee,txCount) => {
     
     const command = new PutCommand({
         TableName: "my-simple-table",
@@ -34,6 +34,7 @@ export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) =
             address: address,
             totalBalanceChange: totalBalanceChange,
             totalFee:totalFee,
+            txCount:txCount,
         },
     });
 
@@ -45,7 +46,7 @@ export const dbwrite = async (blocknumber,address,totalBalanceChange,totalFee) =
     }
 
     // 그대로 반환
-    return [blocknumber, address,totalBalanceChange,totalFee];
+    return [blocknumber, address,totalBalanceChange,totalFee,txCount];
 };
 
 
@@ -80,7 +81,6 @@ export const dbread = async (blocknumber,address) => {
         throw new Error("존재하지 않는 Item");
     }
 
-
     // 아이템이 있을 경우 해당 값을 반환
-    return [response.Item.blocknumber, response.Item.address, response.Item.totalBalanceChange, response.Item.totalFee];
+    return [response.Item.blocknumber, response.Item.address, response.Item.totalBalanceChange, response.Item.totalFee, response.Item.txCount];
 };
