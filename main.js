@@ -5,9 +5,9 @@ import 'dotenv/config';
 
 
 
-// Express 서버 사용, 포트 3000
+// Express 서버 사용, 포트 80
 const app = express();
-const port = 3000;
+const port = 80;
 
 
 /**
